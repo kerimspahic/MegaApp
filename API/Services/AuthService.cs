@@ -9,11 +9,13 @@ namespace API.Services
     {
         private readonly AppDbContext _context;
         private readonly IPasswordHasherService _passwordHasher;
+        private readonly IJwtTokenService _jwtTokenService;
 
-        public AuthService(AppDbContext context, IPasswordHasherService passwordHasher)
+        public AuthService(AppDbContext context, IPasswordHasherService passwordHasher, IJwtTokenService jwtTokenService)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _jwtTokenService = jwtTokenService;
         }
 
         public async Task<bool> Register(string userName, string password, string email)
@@ -53,14 +55,19 @@ namespace API.Services
 
         }
 
-        public async Task<bool> Login(string userName, string password)
+        public async Task<string> Login(string userName, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
 
-            if (user == null)
-                return false;
+            if (user == null || !_passwordHasher.VerifyPassword(user.PasswordHash, password))
+                return null;
 
-            return _passwordHasher.VerifyPassword(user.PasswordHash, password);
+            var roles = await _context.UserRoles
+                .Where(ur => ur.UserId == user.UserId)
+                .Select(ur => ur.Role.RoleName)
+                .ToListAsync();
+
+            return _jwtTokenService.GenerateToken(user, roles);
         }
     }
 }

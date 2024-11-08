@@ -35,8 +35,8 @@ namespace API.Controllers
         {
             try
             {
-                await _authservice.Login(userName,password);
-                return Ok();
+                var token = await _authservice.Login(userName,password);
+                return Ok(token);
             }
             catch (ArgumentException ex)
             {
