@@ -1,4 +1,5 @@
-using API.Services;
+using API.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -6,13 +7,14 @@ namespace API.Controllers
     [Route("[controller]")]
     public class AuthController : Controller
     {
-        private readonly AuthService _authservice;
+        private readonly IAuthService _authservice;
 
-        public AuthController(AuthService authService)
+        public AuthController(IAuthService authService)
         {
             _authservice = authService;
         }
 
+        [AllowAnonymous]
         [HttpPost("Register")]
         public async Task<IActionResult> Register(string userName, string password, string email)
         {
@@ -27,6 +29,7 @@ namespace API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         public async Task<IActionResult> Login(string userName, string password)
         {
