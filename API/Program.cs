@@ -1,4 +1,6 @@
 using API.Data.Context;
+using API.Interfaces;
+using API.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -48,7 +50,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
+
 var app = builder.Build();
+
+using var scope = app.Services.CreateScope();
+var services = scope.ServiceProvider;
+
+SeedData.InitializeAsync(services).Wait();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
