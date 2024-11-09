@@ -1,8 +1,11 @@
+using API.Data.Dto.Auth;
+using API.Data.Dto.User;
+
 namespace API.Interfaces
 {
     public interface IAuthService
     {
-        Task<bool> Register(string userName, string password, string email);
-        Task<string> Login(string userName, string password);
+        Task<bool> Register(RegisterDto registerDto);
+        Task<string> Login(LoginDto loginDto);
     }
 }

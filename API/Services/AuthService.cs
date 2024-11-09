@@ -1,4 +1,8 @@
 using API.Data.Context;
+using API.Data.Dto.Auth;
+using API.Data.Dto.User;
+using API.Data.Mapping;
+using API.Data.StaticData;
 using API.Interfaces;
 using API.Models;
 using Microsoft.EntityFrameworkCore;
@@ -21,26 +25,15 @@ namespace API.Services
             _jwtTokenService = jwtTokenService;
         }
 
-        public async Task<bool> Register(string userName, string password, string email)
+        public async Task<bool> Register(RegisterDto registerDto)
         {
-            string roleName = "User";
-
-            var role = await _context.Role.FirstOrDefaultAsync(r => r.RoleName == roleName);
+            var role = await _context.Role.FirstOrDefaultAsync(r => r.RoleName == UserRoles.User);
             if (role == null)
-            {
                 throw new ArgumentException("Role does not exist.");
-            }
 
-            var passwordHash = _passwordHasher.HashPassword(password);
+            var user = registerDto.ToUserFromRegisterDto();
 
-            var user = new User
-            {
-                UserName = userName,
-                PasswordHash = passwordHash,
-                Email = email,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+            var passwordHash = _passwordHasher.HashPassword(registerDto.Password);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -55,12 +48,11 @@ namespace API.Services
             await _context.SaveChangesAsync();
 
             return true;
-
         }
 
-        public async Task<string> Login(string userName, string password)
+        public async Task<string> Login(LoginDto dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == dto.UserName);
 
             if (user == null)
                 return null;
@@ -68,7 +60,7 @@ namespace API.Services
             if (user.LockoutEnabled && user.LockoutEnd > DateTime.UtcNow)
                 return "Account is locked. Try again in 15 min";
 
-            if (_passwordHasher.VerifyPassword(user.PasswordHash, password))
+            if (_passwordHasher.VerifyPassword(user.PasswordHash, dto.Password))
             {
                 user.FailedLoginAttempts = 0;
                 user.LockoutEnabled = false;
