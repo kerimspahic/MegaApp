@@ -1,3 +1,5 @@
+using API.Data.Dto.Auth;
+using API.Data.Dto.User;
 using API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,30 +18,33 @@ namespace API.Controllers
 
         [AllowAnonymous]
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(string userName, string password, string email)
+        public async Task<IActionResult> Register(RegisterDto registerDto)
         {
-            try
+            if (registerDto.Password != registerDto.ConfirmPassword)
             {
-                await _authService.Register(userName, password, email);
-                return Ok();
+                return BadRequest("Password and Confirm Password do not match.");
             }
-            catch (ArgumentException ex)
+
+            var result = await _authService.Register(registerDto);
+            if (!result)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, "An error occurred while creating the user.");
             }
+
+            return Ok("User registered successfully.");
         }
 
         [AllowAnonymous]
         [HttpPost("Login")]
-        public async Task<IActionResult> Login(string userName, string password)
+        public async Task<IActionResult> Login(LoginDto loginDto)
         {
-            var result = await _authService.Login(userName, password);
+            var result = await _authService.Login(loginDto);
 
             if (result == null)
                 return Unauthorized("Invalid credentials or account locked.");
             else if (result == "Account is locked. Try again later.")
                 return Forbid(result);
-            return Ok(new { Token = result });
+            return Ok(result);
         }
     }
 }

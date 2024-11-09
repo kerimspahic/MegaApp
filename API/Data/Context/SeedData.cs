@@ -1,3 +1,4 @@
+using API.Data.StaticData;
 using API.Interfaces;
 using API.Models;
 using Isopoh.Cryptography.Argon2;
@@ -11,15 +12,15 @@ namespace API.Data.Context
         {
             using var context = services.GetRequiredService<AppDbContext>();
             var passwordHasher = services.GetRequiredService<IPasswordHasherService>();
-            
+
             await context.Database.EnsureCreatedAsync();
 
             if (!context.Role.Any())
             {
                 context.Role.AddRange(
-                    new Role { RoleName = "User", Description = "Regular user role" },
-                    new Role { RoleName = "Manager", Description = "Manager role" },
-                    new Role { RoleName = "Admin", Description = "Administrator role" }
+                    new Role { RoleName = UserRoles.User, Description = "Regular user role" },
+                    new Role { RoleName = UserRoles.Manager, Description = "Manager role" },
+                    new Role { RoleName = UserRoles.Admin, Description = "Administrator role" }
                 );
                 await context.SaveChangesAsync();
             }
@@ -43,7 +44,7 @@ namespace API.Data.Context
                 await context.SaveChangesAsync();
             }
 
-            var adminRole = await context.Role.FirstOrDefaultAsync(r => r.RoleName == "Admin");
+            var adminRole = await context.Role.FirstOrDefaultAsync(r => r.RoleName == UserRoles.Admin);
             if (adminRole != null && !context.UserRoles.Any(ur => ur.UserId == adminUser.UserId && ur.RoleId == adminRole.RoleId))
             {
                 var userRole = new UserRole
