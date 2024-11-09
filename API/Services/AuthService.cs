@@ -11,6 +11,9 @@ namespace API.Services
         private readonly IPasswordHasherService _passwordHasher;
         private readonly IJwtTokenService _jwtTokenService;
 
+        private const int MaxFailedAttempts = 5;
+        private readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
         public AuthService(AppDbContext context, IPasswordHasherService passwordHasher, IJwtTokenService jwtTokenService)
         {
             _context = context;
@@ -59,15 +62,41 @@ namespace API.Services
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
 
-            if (user == null || !_passwordHasher.VerifyPassword(user.PasswordHash, password))
+            if (user == null)
                 return null;
 
-            var roles = await _context.UserRoles
-                .Where(ur => ur.UserId == user.UserId)
-                .Select(ur => ur.Role.RoleName)
-                .ToListAsync();
+            if (user.LockoutEnabled && user.LockoutEnd > DateTime.UtcNow)
+                return "Account is locked. Try again in 15 min";
 
-            return _jwtTokenService.GenerateToken(user, roles);
+            if (_passwordHasher.VerifyPassword(user.PasswordHash, password))
+            {
+                user.FailedLoginAttempts = 0;
+                user.LockoutEnabled = false;
+                user.LockoutEnd = null;
+
+                await _context.SaveChangesAsync();
+
+                var roles = await _context.UserRoles
+                    .Where(ur => ur.UserId == user.UserId)
+                    .Select(ur => ur.Role.RoleName)
+                    .ToListAsync();
+
+                return _jwtTokenService.GenerateToken(user, roles);
+            }
+            else
+            {
+                user.FailedLoginAttempts++;
+
+                if (user.FailedLoginAttempts >= MaxFailedAttempts)
+                {
+                    user.LockoutEnabled = true;
+                    user.LockoutEnd = DateTime.UtcNow.Add(LockoutDuration);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return null;
+            }
         }
     }
 }
