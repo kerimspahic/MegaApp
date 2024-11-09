@@ -1,5 +1,6 @@
 using API.Data.Configuration;
 using API.Data.Context;
+using API.Data.StaticData;
 using API.Interfaces;
 using API.Services;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,13 @@ builder.Services.AddSwaggerGen(option =>
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services.AddAuthorization(options => 
+{
+    options.AddPolicy("StandardRights", policy => policy.RequireRole(UserRoles.User));
+    options.AddPolicy("ElevatedRights", policy => policy.RequireRole(UserRoles.User, UserRoles.Manager));
+    options.AddPolicy("AdminRights", policy => policy.RequireRole(UserRoles.User, UserRoles.Manager, UserRoles.Admin));
 });
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
