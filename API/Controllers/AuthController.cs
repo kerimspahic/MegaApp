@@ -7,11 +7,11 @@ namespace API.Controllers
     [Route("[controller]")]
     public class AuthController : Controller
     {
-        private readonly IAuthService _authservice;
+        private readonly IAuthService _authService;
 
         public AuthController(IAuthService authService)
         {
-            _authservice = authService;
+            _authService = authService;
         }
 
         [AllowAnonymous]
@@ -20,12 +20,12 @@ namespace API.Controllers
         {
             try
             {
-                await _authservice.Register(userName, password, email);
+                await _authService.Register(userName, password, email);
                 return Ok();
             }
             catch (ArgumentException ex)
             {
-            return BadRequest(ex.Message);
+                return BadRequest(ex.Message);
             }
         }
 
@@ -33,15 +33,13 @@ namespace API.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login(string userName, string password)
         {
-            try
-            {
-                var token = await _authservice.Login(userName,password);
-                return Ok(token);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var result = await _authService.Login(userName, password);
+
+            if (result == null)
+                return Unauthorized("Invalid credentials or account locked.");
+            else if (result == "Account is locked. Try again later.")
+                return Forbid(result);
+            return Ok(new { Token = result });
         }
     }
 }
