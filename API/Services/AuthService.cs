@@ -35,6 +35,8 @@ namespace API.Services
 
             var passwordHash = _passwordHasher.HashPassword(registerDto.Password);
 
+            user.PasswordHash = passwordHash;
+            
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
