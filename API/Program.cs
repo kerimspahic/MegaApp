@@ -66,6 +66,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
 
 var app = builder.Build();
 
